@@ -198,6 +198,18 @@ def build_report(symbols: list[str], *, run_missing: bool = True) -> str:
         "> **Cost figures are reconstructed, not verified** against SET's rulebook or a broker "
         "schedule (spec R13). Treat them as order-of-magnitude.",
         "",
+        "## Figures",
+        "",
+        "Rendered by `python scripts/make_figures.py` into `results/figures/`.",
+        "",
+        "![Does anything beat the naive lag?](figures/01_mase_vs_naive.png)",
+        "",
+        "![Directional accuracy vs a coin flip](figures/02_directional_accuracy.png)",
+        "",
+        "![What SET frictions cost](figures/03_friction_gap.png)",
+        "",
+        "![The best-scoring model, up close](figures/04_forecast_reality.png)",
+        "",
         "## Universe",
         "",
     ]

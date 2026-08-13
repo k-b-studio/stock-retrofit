@@ -1,6 +1,6 @@
 # stock-retrofit — results
 
-Generated 2026-08-13 11:10 UTC · git `b748feedf7107b02727d4d1f10195a651c243471-dirty` · seed 42
+Generated 2026-08-13 15:25 UTC · git `13ebaaddc8217c20a3e8eef24e3d791dea87eb4c-dirty` · seed 42
 
 Walk-forward evaluation of the [huseinzol05/Stock-Prediction-Models](https://github.com/huseinzol05/Stock-Prediction-Models) catalogue on Thai SET bank shares, on a harness that does not leak and a backtest that charges SET trading costs.
 
@@ -12,6 +12,18 @@ Walk-forward evaluation of the [huseinzol05/Stock-Prediction-Models](https://git
 - Splits: 750 training bars, 60-bar test blocks, step 60, up to 8 of the most recent folds — a truncated history yields fewer, and the per-ticker `folds` column says how many actually ran. Every scaler is fit inside its own fold.
 
 > **Cost figures are reconstructed, not verified** against SET's rulebook or a broker schedule (spec R13). Treat them as order-of-magnitude.
+
+## Figures
+
+Rendered by `python scripts/make_figures.py` into `results/figures/`.
+
+![Does anything beat the naive lag?](figures/01_mase_vs_naive.png)
+
+![Directional accuracy vs a coin flip](figures/02_directional_accuracy.png)
+
+![What SET frictions cost](figures/03_friction_gap.png)
+
+![The best-scoring model, up close](figures/04_forecast_reality.png)
 
 ## Universe
 

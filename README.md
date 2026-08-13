@@ -55,6 +55,19 @@ notebooks.
 
 ---
 
+## Figures
+
+```bash
+python scripts/make_figures.py     # -> results/figures/*.png
+```
+
+| | |
+|---|---|
+| `01_mase_vs_naive.png` | every model against the naive-lag line, one panel per ticker |
+| `02_directional_accuracy.png` | directional accuracy against the 50% coin flip |
+| `03_friction_gap.png` | dumbbell: frictionless return → return after SET costs, per agent |
+| `04_forecast_reality.png` | the best-scoring model up close — forecasts vs what actually happened |
+
 ## The headline result
 
 **No model in the catalogue beats a naive lag out-of-sample on these tickers, after costs.**

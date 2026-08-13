@@ -24,3 +24,5 @@ results/*
 # and its git SHA stamp only means something if it is committed alongside the
 # code that produced it.
 !results/final-report.md
+!results/figures/
+!results/figures/*.png
