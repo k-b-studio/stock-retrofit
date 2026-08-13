@@ -23,11 +23,23 @@ class BuyAndHold(Agent):
     trainable = False
 
     def reset(self) -> None:
-        self._bought = False
+        return None
 
     def act(self, obs: Observation) -> int:
-        if not self._bought and obs.cash > obs.close * 100:
-            self._bought = True
+        """Keep buying until the cash is deployed, then hold.
+
+        Not "buy once and stop". Under a participation cap a single order is
+        trimmed to a fraction of the session's volume, and an agent that gives
+        up there ends the fold mostly in cash — on BAY that meant deploying
+        16% of the account and calling it buy-and-hold. It then loses to any
+        agent that trades repeatedly, purely because the baseline was
+        handicapped rather than because the agent found anything.
+
+        A real holder accumulates over successive sessions, so this does too.
+        Where no cap binds (KBANK, SCB) the first order takes the whole
+        account and every later bar is a hold, exactly as before.
+        """
+        if obs.cash > obs.close * 100:
             return BUY
         return HOLD
 

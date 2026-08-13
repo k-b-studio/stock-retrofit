@@ -188,7 +188,12 @@ one config edit to reverse.
 - **Features are deliberately plain** — five causal blocks shared by every model, so the comparison
   is between architectures rather than between feature sets.
 - **BAY's participation cap is on by default** (5% of session volume) and its results should be
-  read as the liquidity stress case, not as one third of an equally-weighted table.
+  read as the liquidity stress case, not as one third of an equally-weighted table. Under a cap
+  the frictionless column also drops the liquidity constraint, so part of BAY's friction gap is a
+  statement about its float rather than about commission. The cap is also why `buy_and_hold`
+  accumulates across sessions rather than issuing a single order — a baseline that stops after one
+  trimmed fill sits mostly in cash and loses to anything that trades, which measures the handicap
+  rather than the strategy.
 
 ## Source material
 

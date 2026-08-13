@@ -106,6 +106,34 @@ def _md_table(df: pd.DataFrame, columns: dict[str, str], formats: dict) -> str:
     return "\n".join([header, rule, *rows])
 
 
+def _participation_note(symbol: str, ok: pd.DataFrame) -> list[str]:
+    """Explain a large friction gap that is liquidity, not commission.
+
+    Without this, BAY's numbers read as though commission cost nine percent.
+    """
+    from .data import participation_cap_for
+
+    cap = participation_cap_for(symbol)
+    if cap is None or not len(ok):
+        return []
+    gap = float(ok["friction_gap"].mean())
+    return [
+        f"> **{symbol} carries a {cap:.0%} participation cap**, so the frictionless column also "
+        f"drops the liquidity constraint — it lets an agent take a position the market could not "
+        f"actually have absorbed. Part of the mean gap here ({gap:+.2%}) is therefore a statement "
+        f"about {symbol}'s float rather than about commission. With ~72-76% of shares held by "
+        f"MUFG, that is the intended reading: the frictionless number is not a return anyone "
+        f"could have earned.",
+        "",
+        "> The cap also changes what a *fair baseline* means. A buy-and-hold that issues one "
+        "order, has it trimmed to a fraction of a session's volume and then stops would sit "
+        "mostly in cash — and would lose to any agent that trades repeatedly, purely because the "
+        "reference line was handicapped. `buy_and_hold` here accumulates across sessions until "
+        "its capital is deployed, which is what a real holder does under a liquidity constraint.",
+        "",
+    ]
+
+
 def _buy_and_hold_verdict(ok: pd.DataFrame, symbol: str) -> list[str]:
     """How many active agents beat simply holding the stock, net of costs.
 
@@ -163,11 +191,12 @@ def build_report(symbols: list[str], *, run_missing: bool = True) -> str:
         f"- **sharpe_net** is annualised, after a round-trip cost of "
         f"{market_spec.round_trip_cost:.3%}. **sharpe_gross** charges nothing.",
         f"- Splits: {eval_cfg.train_window} training bars, {eval_cfg.test_window}-bar test blocks, "
-        f"step {eval_cfg.step}, most recent {eval_cfg.max_folds} folds. Every scaler is fit inside "
-        "its own fold.",
+        f"step {eval_cfg.step}, up to {eval_cfg.max_folds} of the most recent folds — a truncated "
+        "history yields fewer, and the per-ticker `folds` column says how many actually ran. "
+        "Every scaler is fit inside its own fold.",
         "",
         "> **Cost figures are reconstructed, not verified** against SET's rulebook or a broker "
-        "> schedule (spec R13). Treat them as order-of-magnitude.",
+        "schedule (spec R13). Treat them as order-of-magnitude.",
         "",
         "## Universe",
         "",
@@ -175,12 +204,14 @@ def build_report(symbols: list[str], *, run_missing: bool = True) -> str:
 
     for symbol in symbols:
         meta = read_meta(symbol)
-        out.append(
-            f"**{symbol}** — " + describe(symbol).split("\n", 1)[1].strip().replace("\n", "; ")
-        )
+        lines = [ln.strip() for ln in describe(symbol).split("\n")]
+        out.append(f"**{symbol}** — {lines[0].split('—', 1)[-1].strip()}")
+        for line in lines[1:]:
+            if line:
+                out.append(f"  - {line}")
         if meta:
             out.append(
-                f"  · {meta.rows} bars {meta.start} → {meta.end}, source `{meta.source}`, "
+                f"  - {meta.rows} bars {meta.start} → {meta.end}, source `{meta.source}`, "
                 f"hash `{meta.content_hash[:12]}`, {meta.repairs.get('count', 0)} repaired field(s)"
             )
         out.append("")
@@ -259,6 +290,7 @@ def build_report(symbols: list[str], *, run_missing: bool = True) -> str:
                 f"{int((ok['ret_friction'] > 0).sum())} still do after SET costs.** "
                 f"Frictions cost {ok['friction_gap'].mean():+.2%} per fold on average.",
                 "",
+                *_participation_note(symbol, ok),
                 *_buy_and_hold_verdict(ok, symbol),
             ]
 

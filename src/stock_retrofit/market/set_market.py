@@ -218,11 +218,40 @@ class SETMarket:
             adverse = tick_size(price) * cfg.slippage_ticks
             price = price + adverse if side == "buy" else price - adverse
 
+        low, high = float(self.low[t]), float(self.high[t])
         price = snap_to_tick(price, mode="up" if side == "buy" else "down")
         # Never fill outside the range the market actually traded in.
-        price = min(max(price, float(self.low[t])), float(self.high[t]))
-        price = snap_to_tick(price, mode="down" if side == "buy" else "up")
-        return max(price, 0.0)
+        price = min(max(price, low), high)
+
+        # Re-snap *inward*. Snapping outward here is how a clamped price escapes
+        # the bar: BAY's high arrives from the vendor as 24.299999237060547
+        # (float32 precision widened to float64), and rounding a sell up from
+        # there lands on 24.30 — a price 7.6e-7 above the day's high, which the
+        # invariants correctly refuse. Try the interior direction first and only
+        # fall back outward when no valid tick sits inside the bar at all.
+        inward = snap_to_tick(price, mode="down" if side == "buy" else "up")
+        if not self._inside_bar(inward, low, high):
+            inward = snap_to_tick(price, mode="up" if side == "buy" else "down")
+        if not self._inside_bar(inward, low, high):
+            # No valid tick sits inside the bar at all. A real SET bar always
+            # prints on the tick grid, so this means the data is off-grid.
+            # Refuse the order rather than fill it at a price that could not
+            # have traded — inventing one is how a backtest starts lying.
+            return 0.0
+        return max(inward, 0.0)
+
+    @staticmethod
+    def _inside_bar(price: float, low: float, high: float) -> bool:
+        """Range check with a tolerance sized to the data's real precision.
+
+        Vendor bars arrive at float32 precision, so an exact-decimal tick price
+        can sit a fraction of a microunit outside a bound that *is* that price.
+        A relative 1e-6 tolerance absorbs that without admitting a genuine
+        out-of-range fill, which would be off by a tick — orders of magnitude
+        larger.
+        """
+        tol = 1e-6 * max(1.0, abs(high))
+        return low - tol <= price <= high + tol
 
     def _limit_ok(self, t: int, price: float) -> bool:
         cfg = self.config
@@ -363,7 +392,7 @@ class SETMarket:
             if not f.ok:
                 continue
             assert f.commission >= 0, f"negative commission on {f.date}"
-            assert self.low[f.t] - 1e-9 <= f.price <= self.high[f.t] + 1e-9, (
+            assert self._inside_bar(f.price, float(self.low[f.t]), float(self.high[f.t])), (
                 f"fill at {f.price} on {f.date} is outside the day's "
                 f"[{self.low[f.t]}, {self.high[f.t]}]"
             )
