@@ -1,0 +1,23 @@
+# Reconstructed from actual imports across all notebooks/scripts in this repo.
+# No requirements.txt / environment file shipped with the original download.
+#
+# IMPORTANT: ~40 of 62 notebooks use TensorFlow 1.x API (tf.Session, tf.placeholder).
+# They will NOT run on tensorflow>=2 without the compat shim:
+#   import tensorflow.compat.v1 as tf
+#   tf.disable_v2_behavior()
+# Easiest fix: install tensorflow==1.15.0 in a Python 3.7 environment instead.
+
+numpy
+pandas
+matplotlib
+seaborn
+scikit-learn
+scipy
+statsmodels
+tensorflow==1.15.0   # or tensorflow>=2 + compat.v1 shim, see note above
+xgboost
+tqdm
+requests
+flask
+bayesian-optimization   # imported as bayes_opt, used in free-agent/evolution-strategy-bayesian-agent.ipynb
+mpl_finance              # used in misc/tesla-study.ipynb, misc/overbought-oversold.ipynb (unmaintained, may need manual install from github)

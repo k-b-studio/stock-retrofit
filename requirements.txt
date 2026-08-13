@@ -1,0 +1,43 @@
+# stock-retrofit — target environment (Python 3.11+)
+# Retrofit of huseinzol05/Stock-Prediction-Models for Thai SET equities (SCB, KBANK, BAY).
+# Decision: full rewrite in PyTorch. The upstream TF1 stack is captured separately in
+# requirements-legacy-tf1.txt for reference only — do NOT install both.
+
+# --- core numerics ---
+numpy>=1.26
+pandas>=2.2
+scipy>=1.13
+
+# --- modelling ---
+torch>=2.3                 # replaces tensorflow==1.15 across all ported models
+scikit-learn>=1.5
+xgboost>=2.1
+statsmodels>=0.14          # ARIMA in the stacking notebooks
+
+# --- data access (Thai SET) ---
+requests>=2.32
+beautifulsoup4>=4.12       # only if a scraping fallback is kept; see research doc
+settrade-v2>=2.0           # Settrade Open API Python SDK — requires broker app_id/app_secret
+python-dotenv>=1.0         # keep Settrade credentials out of source
+# thaifin — FUNDAMENTALS ONLY (quarterly/yearly statements), never a price source.
+# Do NOT pin by version: the local clone's pyproject says 1.0.0 but already ships the
+# v1.1 Stocks class, so the version string doesn't identify the code. Pin by commit SHA:
+#   thaifin @ git+https://github.com/ninyawee/thaifin.git@<SHA>
+# Local clone for reference: ../../external-repo/thaifin-master/
+# Must be consumed behind the point-in-time gate — thaifin exposes no announcement date,
+# and SET allows 45 days post-quarter to file. See specs/thai-market-data-layer.md R19-R25.
+
+# --- backtesting / metrics ---
+# no heavyweight framework by default; the spec defines a small SET-aware engine.
+# If you prefer an off-the-shelf engine, evaluate vectorbt or backtesting.py before writing one.
+
+# --- viz / notebooks ---
+matplotlib>=3.9
+seaborn>=0.13
+jupyterlab>=4.2
+tqdm>=4.66
+
+# --- optional ---
+# bayesian-optimization>=2.0   # free-agent/evolution-strategy-bayesian-agent.ipynb
+# mplfinance>=0.12             # modern replacement for the unmaintained mpl_finance used in misc/
+# yfinance>=0.2                # fallback/cross-check source for SCB.BK, KBANK.BK, BAY.BK
