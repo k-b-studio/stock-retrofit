@@ -9,10 +9,18 @@ venv/
 *.egg-info/
 build/
 dist/
+.claude/
 
-# Cached market data and run outputs are reproducible artefacts, not source.
+# Cached market data and per-run outputs are regenerable, not source.
 data/raw/*.parquet
 data/raw/*.json
 data/processed/*
 results/*
 !results/.gitkeep
+
+# ...but the final report is tracked. It is NOT reproducible from this repo:
+# the cached bars are untracked and the vendor's series moves daily, so a
+# regenerated report would not match this one. It is the project's deliverable
+# and its git SHA stamp only means something if it is committed alongside the
+# code that produced it.
+!results/final-report.md
