@@ -1,6 +1,6 @@
 # stock-retrofit — results
 
-Generated 2026-08-13 15:25 UTC · git `13ebaaddc8217c20a3e8eef24e3d791dea87eb4c-dirty` · seed 42
+Generated 2026-08-13 15:31 UTC · git `61ba19f82f940a3d8406812023f1c59c28485fe7-dirty` · seed 42
 
 Walk-forward evaluation of the [huseinzol05/Stock-Prediction-Models](https://github.com/huseinzol05/Stock-Prediction-Models) catalogue on Thai SET bank shares, on a harness that does not leak and a backtest that charges SET trading costs.
 
@@ -15,7 +15,7 @@ Walk-forward evaluation of the [huseinzol05/Stock-Prediction-Models](https://git
 
 ## Figures
 
-Rendered by `python scripts/make_figures.py` into `results/figures/`.
+Rendered by `notebooks/07_figures.ipynb` — one figure per cell.
 
 ![Does anything beat the naive lag?](figures/01_mase_vs_naive.png)
 

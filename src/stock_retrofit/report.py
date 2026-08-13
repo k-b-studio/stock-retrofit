@@ -200,7 +200,7 @@ def build_report(symbols: list[str], *, run_missing: bool = True) -> str:
         "",
         "## Figures",
         "",
-        "Rendered by `python scripts/make_figures.py` into `results/figures/`.",
+        "Rendered by `notebooks/07_figures.ipynb` — one figure per cell.",
         "",
         "![Does anything beat the naive lag?](figures/01_mase_vs_naive.png)",
         "",

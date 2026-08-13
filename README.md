@@ -57,16 +57,15 @@ notebooks.
 
 ## Figures
 
-```bash
-python scripts/make_figures.py     # -> results/figures/*.png
-```
+Rendered by `notebooks/07_figures.ipynb` — one figure per cell, so re-running a
+single cell refreshes exactly one PNG in `results/figures/`.
 
-| | |
-|---|---|
-| `01_mase_vs_naive.png` | every model against the naive-lag line, one panel per ticker |
-| `02_directional_accuracy.png` | directional accuracy against the 50% coin flip |
-| `03_friction_gap.png` | dumbbell: frictionless return → return after SET costs, per agent |
-| `04_forecast_reality.png` | the best-scoring model up close — forecasts vs what actually happened |
+| cell | figure | |
+|---|---|---|
+| 1 | `01_mase_vs_naive.png` | every model against the naive-lag line, one panel per ticker |
+| 2 | `02_directional_accuracy.png` | directional accuracy against the 50% coin flip |
+| 3 | `03_friction_gap.png` | dumbbell: frictionless return → return after SET costs, per agent |
+| 4 | `04_forecast_reality.png` | the best-scoring model up close — forecasts vs what actually happened |
 
 ## The headline result
 
@@ -120,7 +119,7 @@ src/stock_retrofit/
   agents/    rule_based · qfamily · policy_gradient · evolution · env · runner
   cli.py     fetch | quality | reconcile | evaluate | backtest | report | status
 configs/     data · eval · market · models/*.yaml (23) · agents/*.yaml (24)
-notebooks/   01_data … 06_report — one runnable deliverable per phase
+notebooks/   01_data … 06_report — one deliverable per phase · 07_figures — one figure per cell
 docs/        settrade-api-notes.md · upstream-mapping.md
 ```
 

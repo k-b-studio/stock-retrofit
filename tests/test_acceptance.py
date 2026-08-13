@@ -207,5 +207,25 @@ def test_notebooks_exist_for_every_phase():
         "04_models",
         "05_agents",
         "06_report",
+        "07_figures",
     ]:
         assert (ROOT / "notebooks" / f"{name}.ipynb").exists(), f"{name}.ipynb missing"
+
+
+def test_figure_notebook_has_one_figure_per_cell():
+    """The figures notebook is structured for re-running a single figure.
+
+    Each figure lives in its own code cell that both renders inline and writes
+    its own PNG, so refreshing one chart never re-runs the other three (figure 4
+    retrains a model, which is the expensive one).
+    """
+    import json
+
+    nb = json.loads((ROOT / "notebooks" / "07_figures.ipynb").read_text())
+    code = ["".join(c["source"]) for c in nb["cells"] if c["cell_type"] == "code"]
+    savers = [c for c in code if "fig.savefig(out" in c]
+    assert len(savers) == 4, f"expected 4 figure cells, found {len(savers)}"
+    for i, cell in enumerate(savers, 1):
+        assert "plt.subplots(" in cell, f"figure cell {i} builds no figure"
+    written = {line for c in savers for line in c.splitlines() if "out = FIGURES" in line}
+    assert len(written) == 4, "figure cells must write four distinct filenames"
