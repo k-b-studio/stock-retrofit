@@ -1,0 +1,15 @@
+name: 22_neuro_evolution_novelty
+upstream: agent/22.neuro-evolution-novelty-search-agent.ipynb
+kind: neuro_evolution
+params:
+  hidden: 16
+  population: 20
+  generations: 40
+  sigma: 0.1
+  learning_rate: 0.05
+  timestep: 20
+  novelty: true
+  novelty_weight: 0.5
+  archive_size: 30
+  elite_fraction: 0.25
+  mutation_rate: 0.15

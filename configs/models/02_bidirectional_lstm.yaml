@@ -1,0 +1,13 @@
+name: 02_bidirectional_lstm
+upstream: deep-learning/2.bidirectional-lstm.ipynb
+kind: recurrent
+params:
+  epochs: 40
+  batch_size: 64
+  lr: 0.001
+  hidden: 64
+  layers: 1
+  dropout: 0.1
+  cell: lstm
+  bidirectional: true
+  paths: 1

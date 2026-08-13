@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stock-retrofit"
+version = "0.1.0"
+description = "Thai SET retrofit of the Stock-Prediction-Models catalogue, on a non-leaking harness"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "scipy>=1.13",
+    "torch>=2.3",
+    "scikit-learn>=1.5",
+    "xgboost>=2.1",
+    "statsmodels>=0.14",
+    "pyarrow>=16",
+    "pyyaml>=6",
+    "python-dotenv>=1.0",
+    "yfinance>=0.2",
+    "matplotlib>=3.9",
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+settrade = ["settrade-v2>=2.0"]
+dev = ["pytest>=8", "ruff>=0.5", "black>=24.4", "jupyterlab>=4.2"]
+
+[project.scripts]
+stock-retrofit = "stock_retrofit.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning", "ignore::FutureWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+# E501: line length is handled by black.
+# B027: `Agent.reset`, `Agent.fit` and `ForecastModel.reset` are deliberately
+#   empty optional hooks — a rule-based agent has nothing to train and a
+#   stateless model has nothing to clear. Making them abstract would force
+#   every subclass to write `pass`.
+ignore = ["E501", "B027"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]

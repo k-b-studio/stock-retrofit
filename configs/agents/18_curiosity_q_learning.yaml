@@ -1,0 +1,18 @@
+name: 18_curiosity_q_learning
+upstream: agent/18.curiosity-q-learning-agent.ipynb
+kind: q_learning
+params:
+  hidden: 64
+  episodes: 15
+  gamma: 0.95
+  lr: 0.001
+  batch_size: 32
+  buffer_size: 5000
+  target_sync: 100
+  train_every: 4
+  timestep: 20
+  double: false
+  duel: false
+  recurrent: false
+  curiosity: true
+  curiosity_weight: 0.05

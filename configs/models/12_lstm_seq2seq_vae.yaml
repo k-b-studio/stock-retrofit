@@ -1,0 +1,16 @@
+name: 12_lstm_seq2seq_vae
+upstream: deep-learning/12.lstm-seq2seq-vae.ipynb
+kind: seq2seq
+params:
+  epochs: 40
+  batch_size: 64
+  lr: 0.001
+  hidden: 64
+  layers: 1
+  dropout: 0.1
+  decode_steps: 4
+  kl_weight: 0.001
+  cell: lstm
+  bidirectional: false
+  vae: true
+  latent: 16

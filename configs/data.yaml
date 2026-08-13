@@ -1,0 +1,20 @@
+# Data layer (spec R1-R5).
+#
+# source: yfinance is PRIMARY in this build, not by preference but because the
+# Settrade Open API is credential-gated behind a broker relationship and no
+# credentials exist here. See docs/settrade-api-notes.md. Set to "settrade"
+# once credentials are in .env.
+
+symbols: [KBANK, SCB, BAY]
+source: yfinance
+start: "2000-01-01"
+
+# R5: never silently span the SCB issuer substitution of 2022-04-22.
+#   truncate_at_break     - default; drop everything before the break
+#   full_with_changepoint - keep it all, flag the boundary in `is_changepoint`
+scb_history: truncate_at_break
+
+# Vendor bar defects (close outside [low, high]) are repaired under this policy
+# and every edit is recorded in data/raw/{symbol}.meta.json.
+#   widen_bar_to_close | none
+repair_policy: widen_bar_to_close

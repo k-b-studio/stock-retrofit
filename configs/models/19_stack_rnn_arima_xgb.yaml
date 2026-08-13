@@ -1,0 +1,7 @@
+name: 19_stack_rnn_arima_xgb
+upstream: stacking/stack-rnn-arima-xgb.ipynb
+kind: stack_rnn_arima_xgb
+params:
+  meta: ridge
+  meta_alpha: 1.0
+  inner_folds: 3

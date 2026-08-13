@@ -1,0 +1,17 @@
+name: 12_duel_recurrent_q_learning
+upstream: agent/12.duel-recurrent-q-learning-agent.ipynb
+kind: q_learning
+params:
+  hidden: 64
+  episodes: 15
+  gamma: 0.95
+  lr: 0.001
+  batch_size: 32
+  buffer_size: 5000
+  target_sync: 100
+  train_every: 4
+  timestep: 20
+  double: false
+  duel: true
+  recurrent: true
+  curiosity: false

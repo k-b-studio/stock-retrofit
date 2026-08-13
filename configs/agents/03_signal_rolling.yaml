@@ -1,0 +1,6 @@
+name: 03_signal_rolling
+upstream: agent/3.signal-rolling-agent.ipynb
+kind: signal_rolling
+params:
+  delay: 4
+  threshold: 0.0

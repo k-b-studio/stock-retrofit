@@ -1,0 +1,4 @@
+name: 00_buy_and_hold
+upstream: "(baseline \u2014 not an upstream notebook)"
+kind: buy_and_hold
+params: {}

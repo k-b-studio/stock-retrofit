@@ -1,0 +1,13 @@
+name: 16_attention_is_all_you_need
+upstream: deep-learning/16.attention-is-all-you-need.ipynb
+kind: attention
+params:
+  d_model: 64
+  n_heads: 4
+  n_layers: 2
+  ff_dim: 128
+  dropout: 0.1
+  pooling: mean
+  epochs: 40
+  batch_size: 64
+  lr: 0.001

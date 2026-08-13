@@ -1,0 +1,11 @@
+name: 04_policy_gradient
+upstream: agent/4.policy-gradient-agent.ipynb
+kind: policy_gradient
+params:
+  hidden: 64
+  episodes: 20
+  gamma: 0.95
+  lr: 0.001
+  timestep: 20
+  recurrent: false
+  entropy_weight: 0.01

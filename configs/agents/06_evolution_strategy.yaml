@@ -1,0 +1,10 @@
+name: 06_evolution_strategy
+upstream: agent/6.evolution-strategy-agent.ipynb
+kind: evolution_strategy
+params:
+  hidden: 16
+  population: 20
+  generations: 40
+  sigma: 0.1
+  learning_rate: 0.05
+  timestep: 20

@@ -1,0 +1,8 @@
+name: 20_stack_encoder_ensemble_xgb
+upstream: stacking/stack-encoder-ensemble-xgb.ipynb
+kind: stack_encoder_ensemble_xgb
+params:
+  code_size: 12
+  ae_epochs: 40
+  meta: xgboost
+  inner_folds: 3

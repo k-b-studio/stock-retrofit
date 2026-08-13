@@ -1,0 +1,15 @@
+name: 13_gru_seq2seq
+upstream: deep-learning/13.gru-seq2seq.ipynb
+kind: seq2seq
+params:
+  epochs: 40
+  batch_size: 64
+  lr: 0.001
+  hidden: 64
+  layers: 1
+  dropout: 0.1
+  decode_steps: 4
+  kl_weight: 0.001
+  cell: gru
+  bidirectional: false
+  vae: false

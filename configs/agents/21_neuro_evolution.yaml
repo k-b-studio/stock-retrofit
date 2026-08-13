@@ -1,0 +1,13 @@
+name: 21_neuro_evolution
+upstream: agent/21.neuro-evolution-agent.ipynb
+kind: neuro_evolution
+params:
+  hidden: 16
+  population: 20
+  generations: 40
+  sigma: 0.1
+  learning_rate: 0.05
+  timestep: 20
+  novelty: false
+  elite_fraction: 0.25
+  mutation_rate: 0.15

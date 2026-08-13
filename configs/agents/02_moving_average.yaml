@@ -1,0 +1,6 @@
+name: 02_moving_average
+upstream: agent/2.moving-average-agent.ipynb
+kind: moving_average
+params:
+  short_window: 5
+  long_window: 20

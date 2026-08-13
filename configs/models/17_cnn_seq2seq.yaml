@@ -1,0 +1,13 @@
+name: 17_cnn_seq2seq
+upstream: deep-learning/17.cnn-seq2seq.ipynb
+kind: conv
+params:
+  channels: 64
+  n_layers: 4
+  kernel: 3
+  dilated: false
+  residual: true
+  dropout: 0.1
+  epochs: 40
+  batch_size: 64
+  lr: 0.001

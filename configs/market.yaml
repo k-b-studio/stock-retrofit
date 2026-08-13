@@ -1,0 +1,27 @@
+# SET friction model (spec R10-R13).
+#
+#   !! EVERY NUMBER BELOW IS RECONSTRUCTED AND UNVERIFIED !!
+#
+# R13 requires these be checked against SET's published rulebook and your
+# broker's current schedule before any backtest number is trusted. They have
+# not been. The tick table's shape is stable and widely reproduced; the
+# commission rate varies by broker, channel and turnover tier, and the value
+# here is a plausible retail internet rate rather than a quoted one.
+# Edit this file when you verify them — do not edit src/stock_retrofit/market/rules.py.
+
+initial_cash: 1000000.0
+
+board_lot: 100          # standard main-board lot for common shares
+commission_rate: 0.00157  # RECONSTRUCTED retail internet rate, fraction of turnover
+vat_rate: 0.07            # VAT on the commission, not on turnover
+minimum_commission: 0.0   # some brokers apply a floor; unverified, so zero here
+price_limit: 0.30         # ceiling/floor band on the previous close
+allow_short: false        # no retail shorting without SBL (spec default)
+
+# Cap an order at this fraction of the session's volume. null defers to the
+# instrument registry, which caps BAY at 5% because its float is thin.
+participation_cap: null
+
+# Adverse slippage in ticks. Left at zero so the reported friction gap is
+# attributable to the rules above rather than to a modelling choice.
+slippage_ticks: 0.0

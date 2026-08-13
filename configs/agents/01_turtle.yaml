@@ -1,0 +1,5 @@
+name: 01_turtle
+upstream: agent/1.turtle-agent.ipynb
+kind: turtle
+params:
+  count: 20

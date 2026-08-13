@@ -1,0 +1,17 @@
+# Walk-forward evaluation harness (spec R6/R7).
+# There is no single fixed tail split anywhere in this project.
+
+train_window: 750     # ~3 trading years fit per fold
+test_window: 60       # ~3 months held out per fold
+step: 60              # non-overlapping test blocks
+expanding: false      # sliding window; set true to grow from the series start
+max_folds: 8          # most recent N folds; null uses every fold available
+timestep: 20          # bars each sample looks back over
+seed: 42
+
+features:
+  - log_return
+  - range_pct
+  - close_ma_ratio
+  - volume_z
+  - rsi

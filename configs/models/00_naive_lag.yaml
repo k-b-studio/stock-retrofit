@@ -1,0 +1,4 @@
+name: 00_naive_lag
+upstream: "(baseline \u2014 not an upstream notebook; required by spec R8)"
+kind: naive_lag
+params: {}

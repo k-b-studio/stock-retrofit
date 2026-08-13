@@ -1,0 +1,7 @@
+name: 23_abcd
+upstream: agent/23.abcd-strategy-agent.ipynb
+kind: abcd
+params:
+  lookback: 20
+  min_retracement: 0.382
+  max_retracement: 0.886

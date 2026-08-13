@@ -1,0 +1,11 @@
+name: 16_actor_critic_recurrent
+upstream: agent/16.actor-critic-recurrent-agent.ipynb
+kind: actor_critic
+params:
+  hidden: 64
+  episodes: 20
+  gamma: 0.95
+  lr: 0.001
+  timestep: 20
+  duel: false
+  recurrent: true

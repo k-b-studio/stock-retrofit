@@ -1,0 +1,7 @@
+name: 22_xgboost
+upstream: stacking/stack-rnn-arima-xgb.ipynb (XGB component, run standalone)
+kind: xgboost
+params:
+  n_estimators: 300
+  max_depth: 4
+  learning_rate: 0.05

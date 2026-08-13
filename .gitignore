@@ -1,0 +1,18 @@
+.env
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+
+# Cached market data and run outputs are reproducible artefacts, not source.
+data/raw/*.parquet
+data/raw/*.json
+data/processed/*
+results/*
+!results/.gitkeep

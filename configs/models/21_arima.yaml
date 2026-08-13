@@ -1,0 +1,8 @@
+name: 21_arima
+upstream: stacking/stack-rnn-arima-xgb.ipynb (ARIMA component, run standalone)
+kind: arima
+params:
+  p: 2
+  d: 0
+  q: 2
+  trend: c

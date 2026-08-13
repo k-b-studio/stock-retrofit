@@ -1,0 +1,11 @@
+name: 15_actor_critic_duel
+upstream: agent/15.actor-critic-duel-agent.ipynb
+kind: actor_critic
+params:
+  hidden: 64
+  episodes: 20
+  gamma: 0.95
+  lr: 0.001
+  timestep: 20
+  duel: true
+  recurrent: false
