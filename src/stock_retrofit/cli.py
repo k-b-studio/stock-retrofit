@@ -180,25 +180,34 @@ def _resolve_model_specs(args) -> list[ModelSpec]:
         specs = [ModelSpec.load(args.config)]
     else:
         raise SystemExit("give --config <path> or --all")
-    return _with_naive(specs)
+    return _with_baselines(specs)
 
 
-def _with_naive(specs: list[ModelSpec]) -> list[ModelSpec]:
-    """R8: the naive baseline is on every results table, without being asked for.
+def _with_baselines(specs: list[ModelSpec]) -> list[ModelSpec]:
+    """R8: both reference lines are on every results table, without being asked for.
 
-    Not a convenience. Without it a reader has no way to tell whether a model
+    Not a convenience. Without them a reader has no way to tell whether a model
     did anything, which is precisely how the upstream repo shipped numbers that
     look like skill and are not.
+
+    Two are needed because a forecast is read two ways. `naive_lag` is the
+    reference for the *number* — could you beat predicting zero. `always_long`
+    is the reference for the *position* — could you beat owning the share. A
+    table carrying only the first lets a Sharpe of +2.10 pass for skill when
+    holding the stock scored +1.62.
     """
-    if any(s.kind == "naive_lag" for s in specs):
-        return specs
-    baseline = MODEL_CONFIG_DIR / "00_naive_lag.yaml"
-    naive = (
-        ModelSpec.load(baseline)
-        if baseline.exists()
-        else ModelSpec(name="naive_lag", kind="naive_lag")
-    )
-    return [naive, *specs]
+    kinds = {s.kind for s in specs}
+    out = list(specs)
+    for kind, filename in (
+        ("always_long", "00_always_long.yaml"),
+        ("naive_lag", "00_naive_lag.yaml"),
+    ):
+        if kind in kinds:
+            continue
+        path = MODEL_CONFIG_DIR / filename
+        spec = ModelSpec.load(path) if path.exists() else ModelSpec(name=kind, kind=kind)
+        out.insert(0, spec)
+    return out
 
 
 # ---------------------------------------------------------------- backtest

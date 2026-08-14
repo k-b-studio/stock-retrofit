@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
 
+from ..data.protocol import is_session
 from .leakage import register_fit
 
 #: Feature blocks available to any model. Kept small and causal on purpose.
@@ -91,9 +92,24 @@ def build_target(df: pd.DataFrame) -> pd.Series:
     Returns, not price levels. Upstream scored price levels, which is why a lag
     scored in the high nineties there. The last row's target is NaN by
     construction and is dropped by the windower.
+
+    A row whose label would land on a vendor-padded non-session is dropped too,
+    for the reason set out in `data.protocol.is_session`: that label is zero by
+    construction, so scoring it rewards a zero forecast for knowing the calendar
+    and penalises every model that makes a call. On this data that removed 8.5%
+    of KBANK's test rows and 6.2% of BAY's — enough to move a table.
+
+    A genuine flat close on real volume is kept. Those days are unforecastable
+    in *direction* but they are real, and `directional_accuracy` handles them by
+    scoring only days that moved.
     """
     close = df["close"].astype(float)
-    return (close.shift(-1) / close - 1.0).rename("target")
+    target = (close.shift(-1) / close - 1.0).rename("target")
+    # The label at t is realised on bar t+1, so it is bar t+1 that must be a
+    # session. The last row has no t+1 and is dropped either way.
+    session = is_session(df)
+    tradeable_next = np.append(session[1:], False)
+    return target.where(pd.Series(tradeable_next, index=df.index))
 
 
 @dataclass
@@ -213,7 +229,15 @@ def prepare_fold(
     feats = build_features(df, features)
     target = build_target(df)
 
-    valid = feats.notna().all(axis=1).to_numpy() & target.notna().to_numpy()
+    # Two different questions, and conflating them is a trap. `feature_ok` asks
+    # whether a bar can appear *inside* a lookback window; `label_ok` asks
+    # whether it can be a labelled sample. A padded non-session fails the second
+    # (its label is a fabricated zero — see `build_target`) but passes the first:
+    # it is a real calendar day whose close was genuinely observable, and
+    # requiring 20 consecutive labelled bars would discard ~64% of all windows
+    # rather than the ~5% of rows actually at issue.
+    feature_ok = feats.notna().all(axis=1).to_numpy()
+    label_ok = feature_ok & target.notna().to_numpy()
     ts = window.timestep
 
     def usable(lo: int, hi: int, *, allow_history: bool) -> np.ndarray:
@@ -221,9 +245,8 @@ def prepare_fold(
         pos = np.arange(max(start, ts - 1), hi)
         if len(pos) == 0:
             return pos
-        # Every bar in the lookback window must be a usable feature row.
-        win_ok = np.array([valid[p - ts + 1 : p + 1].all() for p in pos])
-        return pos[win_ok & valid[pos]]
+        win_ok = np.array([feature_ok[p - ts + 1 : p + 1].all() for p in pos])
+        return pos[win_ok & label_ok[pos]]
 
     # `train_end - 1` is excluded on purpose: its label is the return realised on
     # `train_end`, which is the first *test* bar. Including it would leak one day

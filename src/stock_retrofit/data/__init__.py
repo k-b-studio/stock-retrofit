@@ -8,7 +8,13 @@ what was deferred (the fundamentals axis, in full).
 from .cache import cached_symbols, read_actions, read_cache, read_meta
 from .corporate_actions import REGISTRY, apply_policy, breaks_for, describe, participation_cap_for
 from .loader import fetch, load, quality_report, reconcile
-from .protocol import CANONICAL_COLUMNS, PriceSource, SchemaViolation, validate_canonical
+from .protocol import (
+    CANONICAL_COLUMNS,
+    PriceSource,
+    SchemaViolation,
+    is_session,
+    validate_canonical,
+)
 from .quality import DataQualityError, QualityReport
 from .sources import SettradeSource, YFinanceSource, get_source
 
@@ -27,6 +33,7 @@ __all__ = [
     "describe",
     "fetch",
     "get_source",
+    "is_session",
     "load",
     "participation_cap_for",
     "quality_report",

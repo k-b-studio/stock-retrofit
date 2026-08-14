@@ -8,6 +8,7 @@ import pytest
 from stock_retrofit.eval.metrics import (
     directional_accuracy,
     evaluate,
+    information_coefficient,
     mase,
     sharpe,
     strategy_returns,
@@ -82,6 +83,63 @@ def test_directional_accuracy_counts_only_calls_made():
     acc, coverage = directional_accuracy(y, pred)
     assert acc == pytest.approx(1.0)
     assert coverage == pytest.approx(0.5)
+
+
+def test_flat_days_are_not_scored_as_directional_misses():
+    """A day that did not move cannot be called, and must not count as a miss.
+
+    This is the defect that made the catalogue read as "worse than chance": on
+    KBANK 20% of out-of-sample days close exactly unchanged, so scoring them
+    against a 50% coin flip capped the attainable accuracy at 80%.
+    """
+    y = np.array([0.01, 0.0, 0.0, -0.02])  # two of four days did not move
+    pred = np.array([0.01, 0.01, -0.01, -0.01])  # both real days called right
+    acc, coverage = directional_accuracy(y, pred)
+    assert acc == pytest.approx(1.0), "flat days must be excluded, not counted wrong"
+    assert coverage == pytest.approx(1.0), "coverage is over days that moved"
+
+
+def test_flat_share_reports_what_was_set_aside():
+    y = np.array([0.01, 0.0, 0.0, -0.02])
+    m = evaluate(y, np.full(4, 0.001))
+    assert m.flat_share == pytest.approx(0.5)
+
+
+def test_a_coin_flip_scores_about_half_on_days_that_moved():
+    """The reference line is 50% again once flat days leave the denominator."""
+    rng = np.random.default_rng(0)
+    y = rng.normal(0, 0.01, 4000)
+    y[rng.random(4000) < 0.25] = 0.0  # a quarter of days do not move
+    acc, _ = directional_accuracy(y, rng.choice([-1.0, 1.0], 4000))
+    assert 0.46 < acc < 0.54
+
+
+def test_information_coefficient_detects_an_edge_that_mase_misses():
+    """The reason IC replaced the `beats_naive` column.
+
+    A forecaster with a real, tradeable edge can score *above* 1.00 on MASE and
+    be reported as "does not beat the naive lag", while its IC is unambiguous.
+    The returns here are zero-inflated like the real thing — a quarter of days
+    close unchanged, as BAY's do — because that is what costs MASE its power:
+    a flat day contributes nothing to MAE(naive) and pure error to MAE(model).
+    """
+    rng = np.random.default_rng(0)
+    y = rng.normal(0, 0.013, 450)
+    y[rng.random(450) < 0.25] = 0.0
+    z = (y - y.mean()) / y.std()
+    edge = 0.10  # a strong daily-equity signal
+    pred = edge * y.std() * (edge * z + np.sqrt(1 - edge**2) * rng.standard_normal(450)) + y.mean()
+
+    ic, t = information_coefficient(y, pred)
+    assert ic > 0.05, "a genuine edge must show up in the IC"
+    assert t > 1.96, "and be significant"
+    assert mase(y, pred) > 1.0, "while MASE still calls it a failure — which is the point"
+
+
+def test_information_coefficient_is_nan_for_a_constant_forecast():
+    y = np.array([0.01, -0.02, 0.005, -0.001])
+    ic, t = information_coefficient(y, np.zeros_like(y))
+    assert np.isnan(ic) and np.isnan(t)
 
 
 def test_costs_reduce_strategy_returns():

@@ -167,7 +167,7 @@ def _buy_and_hold_verdict(ok: pd.DataFrame, symbol: str) -> list[str]:
 
 def build_report(symbols: list[str], *, run_missing: bool = True) -> str:
     from .data import describe, read_meta
-    from .eval import git_sha, summarise_beats
+    from .eval import git_sha, summarise_skill
 
     eval_cfg, market_spec = EvalConfig.load(), MarketConfigSpec.load()
     now = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
@@ -184,10 +184,30 @@ def build_report(symbols: list[str], *, run_missing: bool = True) -> str:
         "",
         "## How to read this",
         "",
-        "- **MASE** is MAE(model) / MAE(naive lag) on next-day returns. **Below 1.00 beats the "
-        "naive lag; at or above 1.00 it does not.** The naive lag is on every table by construction.",
-        "- **dir_acc** counts only rows where a model made a directional call. The naive lag "
-        "abstains everywhere, so its accuracy is undefined rather than zero.",
+        "- **IC** is the out-of-sample correlation between a model's forecast and the return that "
+        "actually happened. **This is the skill column.** A daily equity IC of 0.02-0.05 is a real "
+        "signal and 0.10 is excellent; 0.00 is knowing nothing. `t` is its t-statistic — but read "
+        "it against the count of models tested, because one or two in twenty clear |t| > 1.96 by "
+        "chance and models sharing a feature set are not independent draws.",
+        "- **MASE** is MAE(model) / MAE(naive lag) on next-day returns, and is a **ranking, not a "
+        "test**. There is deliberately no 'beats naive' column: MAE is minimised by the conditional "
+        "median, which on daily returns is ≈ 0, so a forecast of zero is already near-optimal and "
+        "anything that moves off it pays — and on a series where 13-24% of days close unchanged, a "
+        "flat day adds nothing to the denominator and pure error to the numerator. A simulated "
+        "forecaster with a genuine IC of 0.10 crosses MASE 1.00 in 27% of draws on KBANK, 34% on "
+        "SCB and 0% on BAY, so a table of MASE ≥ 1.00 says more about the metric than about the "
+        "catalogue.",
+        "- **dir_acc** counts calls made on days the price **actually moved**. Flat closes are "
+        "excluded from the denominator: `sign(0)` matches no forecast, so a day that did not move "
+        "is a guaranteed miss for every model, and on these tickers 13-24% of sessions close "
+        "unchanged on the SET tick grid. `flat_share` in the CSV reports how many were set aside. "
+        "The naive lag abstains everywhere, so its accuracy is undefined rather than zero.",
+        "- **Two reference rows are pinned to the top of every table.** `naive_lag` is the "
+        "reference for the forecast as a number; `always_long` is the reference for it as a "
+        "position — its Sharpe is what holding the share paid over the same blocks.",
+        "- Vendor-padded non-sessions are excluded. yfinance fills SET holidays with a zero-volume, "
+        "zero-range bar repeating the previous close; the 'return' on one is zero by construction. "
+        "Those rows are dropped from the labels and orders are refused on those bars.",
         f"- **sharpe_net** is annualised, after a round-trip cost of "
         f"{market_spec.round_trip_cost:.3%}. **sharpe_gross** charges nothing.",
         f"- Splits: {eval_cfg.train_window} training bars, {eval_cfg.test_window}-bar test blocks, "
@@ -204,7 +224,7 @@ def build_report(symbols: list[str], *, run_missing: bool = True) -> str:
         "",
         "![Does anything beat the naive lag?](figures/01_mase_vs_naive.png)",
         "",
-        "![Directional accuracy vs a coin flip](figures/02_directional_accuracy.png)",
+        "![Directional accuracy on days the price moved](figures/02_directional_accuracy.png)",
         "",
         "![What SET frictions cost](figures/03_friction_gap.png)",
         "",
@@ -228,7 +248,7 @@ def build_report(symbols: list[str], *, run_missing: bool = True) -> str:
             )
         out.append("")
 
-    totals = {"ran": 0, "beat": 0}
+    totals = {"ran": 0, "positive_ic": 0, "significant": 0, "beat_long": 0, "ic_sum": 0.0}
     agent_totals = {"ran": 0, "profit_free": 0, "profit_net": 0}
 
     for symbol in symbols:
@@ -236,9 +256,13 @@ def build_report(symbols: list[str], *, run_missing: bool = True) -> str:
 
         models = _load_or_run(symbol, "evaluate", run_missing)
         if models is not None and len(models):
-            summary = summarise_beats(models)
+            summary = summarise_skill(models)
             totals["ran"] += summary["ran"]
-            totals["beat"] += summary["beat_naive"]
+            totals["positive_ic"] += summary["positive_ic"]
+            totals["significant"] += summary["significant"]
+            totals["beat_long"] += summary["beat_always_long"]
+            totals["ic_sum"] += summary["mean_ic"] * summary["ran"]
+            long_sharpe = summary["reference"].get("always_long")
             out += [
                 "### Forecasting models",
                 "",
@@ -246,14 +270,17 @@ def build_report(symbols: list[str], *, run_missing: bool = True) -> str:
                     models,
                     {
                         "model": "model",
+                        "ic": "IC",
+                        "ic_t": "t",
                         "MASE": "MASE",
-                        "beats_naive": "beats naive",
                         "dir_acc": "dir acc",
                         "RMSE_ret": "RMSE(ret)",
                         "sharpe_net": "Sharpe net",
                         "sharpe_gross": "Sharpe gross",
                     },
                     {
+                        "ic": "{:+.3f}",
+                        "ic_t": "{:+.1f}",
                         "MASE": "{:.4f}",
                         "dir_acc": "{:.1%}",
                         "RMSE_ret": "{:.5f}",
@@ -262,11 +289,19 @@ def build_report(symbols: list[str], *, run_missing: bool = True) -> str:
                     },
                 ),
                 "",
-                f"**{summary['beat_naive']} of {summary['ran']} models beat the naive lag on "
-                f"{symbol}.**"
-                + (f" Winners: {', '.join(summary['winners'])}." if summary["winners"] else ""),
+                f"**Mean IC {summary['mean_ic']:+.3f} over {summary['ran']} models on {symbol}; "
+                f"{summary['positive_ic']} of {summary['ran']} positive.** "
+                f"{summary['significant']} clear |t| > 1.96, against "
+                f"{summary['expected_false_positives']:.0f} expected by chance"
+                + (f": {', '.join(summary['leaders'])}." if summary["leaders"] else "."),
                 "",
             ]
+            if long_sharpe is not None:
+                out += [
+                    f"Holding {symbol} scored a net Sharpe of **{long_sharpe:+.2f}** over the same "
+                    f"blocks. **{summary['beat_always_long']} of {summary['ran']} models beat it.**",
+                    "",
+                ]
 
         agents = _load_or_run(symbol, "backtest", run_missing)
         if agents is not None and len(agents):
@@ -307,33 +342,38 @@ def build_report(symbols: list[str], *, run_missing: bool = True) -> str:
             ]
 
     scope = symbols[0] if len(symbols) == 1 else f"{len(symbols)} tickers ({', '.join(symbols)})"
+    mean_ic = totals["ic_sum"] / totals["ran"] if totals["ran"] else float("nan")
     out += [
         "## Headline",
         "",
-        f"**{totals['beat']} of {totals['ran']} model runs beat the naive lag out-of-sample "
-        f"across {scope}.**",
+        f"**Mean out-of-sample IC of {mean_ic:+.3f} across {totals['ran']} model runs on {scope}; "
+        f"{totals['positive_ic']} of {totals['ran']} are positive.**",
+        "",
+        "A coin flip would put half of them above zero. That is what a catalogue with no "
+        "forecasting skill on this universe looks like, and it is the result the spec anticipated "
+        "as legitimate and likely.",
+        "",
+        f"Two supporting facts, both pointing the same way. {totals['significant']} runs clear "
+        f"|t| > 1.96 against roughly {0.05 * totals['ran']:.0f} expected by chance alone — and "
+        "those runs are not independent draws, since all 22 architectures read the same five "
+        f"features. And {totals['beat_long']} of {totals['ran']} beat simply holding the share, "
+        "which is the comparison that decides whether any of this was worth running.",
+        "",
+        "The upstream repository reports accuracies in the high nineties for the same "
+        "architectures. Both things are true at once, and the reason is methodological, "
+        "not architectural: upstream fits its scaler on the full series before splitting, "
+        "scores price levels rather than returns, and shows no baseline. On price levels a "
+        "naive lag also scores in the high nineties — `metrics.upstream_accuracy_do_not_use` "
+        "and its test demonstrate this. Those numbers never measured skill.",
+        "",
+        "**What this report no longer claims.** Earlier revisions headlined '0 of 66 model runs "
+        "beat the naive lag'. That statement was true and close to vacuous: on these zero-inflated "
+        "series a forecaster with a genuine edge crosses MASE 1.00 at best a third of the time and "
+        "on BAY not at all, so the count was largely fixed before a single model ran. The "
+        "conclusion has not changed — the models do not work — but it now rests on a measurement "
+        "that could have come out the other way.",
         "",
     ]
-    if totals["beat"] == 0:
-        out += [
-            "That number is zero, and it is reported as zero. It is the result the spec "
-            "anticipated as legitimate and likely, and it is what a non-leaking, "
-            "cost-charging harness produces from this catalogue on this universe.",
-            "",
-            "The upstream repository reports accuracies in the high nineties for the same "
-            "architectures. Both things are true at once, and the reason is methodological, "
-            "not architectural: upstream fits its scaler on the full series before splitting, "
-            "scores price levels rather than returns, and shows no baseline. On price levels a "
-            "naive lag also scores in the high nineties — `metrics.upstream_accuracy_do_not_use` "
-            "and its test demonstrate this. Those numbers never measured skill.",
-            "",
-        ]
-    else:
-        out += [
-            "Treat any winner with suspicion proportional to its margin: 8 folds of 60 days is "
-            "480 observations, and a MASE of 0.99 over that sample is not a discovery.",
-            "",
-        ]
 
     if agent_totals["ran"]:
         out += [

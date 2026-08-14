@@ -113,15 +113,19 @@ def run_walk_forward(
         set_seed(seed + fold.index)
         try:
             model.reset()
-            # Arm the guard around *both* preprocessing and fit — the upstream bug
-            # lived in preprocessing, so leaving it outside would miss the case
-            # this whole harness exists to catch.
+            # Arm the guard around preprocessing, fit *and* predict. The upstream
+            # bug lived in preprocessing, so leaving that outside would miss the
+            # case this harness exists to catch — and predict is inside too
+            # because a model is handed `arrays.y_test` and nothing but the guard
+            # stands between a rolling update and a refit on the answers. (ARIMA
+            # does consume `y_test` there, legitimately: it appends each realised
+            # value only after forecasting it, and estimates no parameters.)
             with leakage_guard(
                 np.arange(fold.test_start, fold.test_end), fold_index=fold.index, active=guard
             ):
                 arrays = prepare_fold(df, fold, window=window, features=features)
                 model.fit(arrays)
-            y_pred = np.asarray(model.predict(arrays), dtype=float).ravel()
+                y_pred = np.asarray(model.predict(arrays), dtype=float).ravel()
             if y_pred.shape != arrays.y_test.shape:
                 raise ValueError(
                     f"{model.name} predicted {y_pred.shape}, expected {arrays.y_test.shape}"
@@ -140,8 +144,8 @@ def run_walk_forward(
             )
             if verbose:
                 print(
-                    f"  {fold.describe(df['date'])} -> MASE {metrics.mase:.3f} "
-                    f"DA {metrics.directional_accuracy:.1%}"
+                    f"  {fold.describe(df['date'])} -> IC {metrics.ic:+.3f} "
+                    f"MASE {metrics.mase:.3f} DA {metrics.directional_accuracy:.1%}"
                 )
         except Exception as exc:  # a broken model must not abort the whole table
             result.error = f"{type(exc).__name__}: {exc}"

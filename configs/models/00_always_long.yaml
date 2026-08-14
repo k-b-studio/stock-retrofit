@@ -1,0 +1,4 @@
+name: 00_always_long
+upstream: "(baseline — not an upstream notebook; the reference line for every Sharpe column)"
+kind: always_long
+params: {}

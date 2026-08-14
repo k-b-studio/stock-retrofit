@@ -14,6 +14,9 @@ import numpy as np
 from ..eval.preprocessing import FoldArrays
 from .base import ForecastModel, register
 
+#: Smallest positive forecast that still reads as "long" everywhere downstream.
+_EPSILON = 1e-9
+
 
 @register("naive_lag")
 class NaiveLag(ForecastModel):
@@ -29,6 +32,40 @@ class NaiveLag(ForecastModel):
 
     def predict(self, fold: FoldArrays) -> np.ndarray:
         return np.zeros(len(fold.x_test), dtype=float)
+
+
+@register("always_long")
+class AlwaysLong(ForecastModel):
+    """Hold the share. The reference line for every Sharpe column (R8).
+
+    A forecast is only ever read two ways in this project: as a number (MASE,
+    RMSE) and as a position (Sharpe, turnover). `NaiveLag` is the reference for
+    the first — a forecast of zero. This is the reference for the second: any
+    strictly positive constant is "long every day", so its Sharpe *is* the
+    return on owning the stock over the same blocks.
+
+    Without it the model tables printed Sharpe figures up to +2.10 against no
+    reference at all, and a reader had no way to see that simply holding KBANK
+    scored +1.62 — that only 6 of 66 model runs beat doing nothing.
+
+    The constant is the training block's mean return, floored at a hair above
+    zero. The floor matters: the *value* of a positive constant is immaterial to
+    the implied position, but a training block with negative drift would flip
+    this row short and it would stop being the always-long reference.
+    """
+
+    def __init__(self, **params) -> None:
+        super().__init__(**params)
+        self._mu = _EPSILON
+
+    def reset(self) -> None:
+        self._mu = _EPSILON
+
+    def fit(self, fold: FoldArrays) -> None:
+        self._mu = max(float(np.mean(fold.unscale(fold.y_train))), _EPSILON)
+
+    def predict(self, fold: FoldArrays) -> np.ndarray:
+        return np.full(len(fold.x_test), self._mu, dtype=float)
 
 
 @register("drift")

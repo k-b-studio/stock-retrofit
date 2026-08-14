@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Protocol, runtime_checkable
 
+import numpy as np
 import pandas as pd
 
 #: Exactly these columns, in exactly this order (spec R3).
@@ -19,6 +20,34 @@ PRICE_COLUMNS: list[str] = ["open", "high", "low", "close"]
 
 class SchemaViolation(ValueError):
     """A frame does not satisfy the canonical contract."""
+
+
+def is_session(df: pd.DataFrame) -> np.ndarray:
+    """True where the bar is a session the market actually held.
+
+    yfinance pads SET holidays with a bar that repeats the previous close on
+    zero volume and zero range. About 5% of bars in each of KBANK, SCB and BAY
+    are such padding — it is present on the liquid names as heavily as on thin
+    BAY, which is what identifies it as calendar padding rather than an absence
+    of trading interest.
+
+    These are not sessions, and treating them as such corrupts two things:
+
+    * **A label.** The return "realised" on a padded bar is zero by
+      construction. A row whose target lands on one is not a forecast — it is a
+      free win for a zero baseline and a guaranteed loss for anything that calls
+      a direction. `build_target` drops those rows.
+    * **A fill.** An order cannot execute on a day the market was shut, and
+      charging commission for one is a cost the strategy never paid. `SETMarket`
+      refuses to trade on them.
+
+    A genuine flat close on real volume is a *session*, and stays: on the SET
+    tick grid an unchanged close is ordinary information, not padding.
+    """
+    volume = df["volume"].to_numpy(dtype=float)
+    high = df["high"].to_numpy(dtype=float)
+    low = df["low"].to_numpy(dtype=float)
+    return ~((volume <= 0) & (high <= low))
 
 
 @runtime_checkable

@@ -127,14 +127,28 @@ def test_no_dead_endpoint_or_rejected_source_in_the_package():
 # -- the baseline is not optional -------------------------------------------
 
 
-def test_naive_lag_is_added_to_every_evaluation_even_when_not_requested():
-    """Spec R8 / criterion 4: the baseline appears on the table automatically."""
-    from stock_retrofit.cli import _with_naive
+def test_baselines_are_added_to_every_evaluation_even_when_not_requested():
+    """Spec R8 / criterion 4: both reference lines appear on the table automatically.
+
+    `naive_lag` is the reference for the forecast as a number, `always_long` for
+    it as a position. A table with only the first cannot tell a reader that a
+    Sharpe of +2.10 lost to owning the share.
+    """
+    from stock_retrofit.cli import _with_baselines
     from stock_retrofit.config import ModelSpec
 
-    specs = _with_naive([ModelSpec.load(MODEL_CONFIG_DIR / "01_lstm.yaml")])
+    specs = _with_baselines([ModelSpec.load(MODEL_CONFIG_DIR / "01_lstm.yaml")])
     assert any(s.kind == "naive_lag" for s in specs)
+    assert any(s.kind == "always_long" for s in specs)
     assert specs[0].kind == "naive_lag", "the baseline must be first on the table"
+
+
+def test_baselines_are_not_duplicated_when_already_requested():
+    from stock_retrofit.cli import _with_baselines
+    from stock_retrofit.config import ModelSpec
+
+    specs = _with_baselines([ModelSpec.load(MODEL_CONFIG_DIR / "00_naive_lag.yaml")])
+    assert sum(s.kind == "naive_lag" for s in specs) == 1
 
 
 def test_buy_and_hold_baseline_exists_for_agents():

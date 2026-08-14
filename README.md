@@ -62,14 +62,31 @@ single cell refreshes exactly one PNG in `results/figures/`.
 
 | cell | figure | |
 |---|---|---|
-| 1 | `01_mase_vs_naive.png` | every model against the naive-lag line, one panel per ticker |
-| 2 | `02_directional_accuracy.png` | directional accuracy against the 50% coin flip |
+| 1 | `01_mase_vs_naive.png` | how the catalogue ranks on MASE, one panel per ticker — a ranking, not a pass/fail test |
+| 2 | `02_directional_accuracy.png` | directional accuracy on days the price moved, against the 50% coin flip |
 | 3 | `03_friction_gap.png` | dumbbell: frictionless return → return after SET costs, per agent |
 | 4 | `04_forecast_reality.png` | the best-scoring model up close — forecasts vs what actually happened |
 
 ## The headline result
 
-**No model in the catalogue beats a naive lag out-of-sample on these tickers, after costs.**
+**Mean out-of-sample IC of +0.009 across 66 model runs on the three tickers; 36 of 66 are
+positive, and 0 of 66 beat simply holding the share.**
+
+IC is the correlation between a model's forecast and the return that actually happened — the
+skill column. A daily equity IC of 0.02–0.05 is a real, tradeable signal and 0.10 is excellent;
+0.00 is knowing nothing. A coin flip would put half the runs above zero, and 36 of 66 is what a
+catalogue with no forecasting skill on this universe looks like. Five runs clear |t| > 1.96
+against roughly 3 expected by chance alone, and those are not independent draws: all 22
+architectures read the same five features.
+
+**MASE is reported as a ranking, not a pass/fail test.** An earlier revision of this project
+headlined *"no model beats a naive lag"*. That was true and close to vacuous — MAE is minimised
+by the conditional median, which on daily returns is ≈ 0, so forecasting zero is already
+near-optimal and anything that moves off it pays. On these zero-inflated series a simulated
+forecaster with a genuine IC of 0.10 crosses MASE 1.00 in only 27% of draws on KBANK, 34% on SCB
+and 0% on BAY, so that count was largely fixed before a single model ran. The conclusion has not
+changed — the models do not work — but it now rests on a measurement that could have come out
+the other way.
 
 The upstream README reports accuracies in the high nineties for the same architectures. Both are
 true at once, and the reason is methodological:
@@ -79,8 +96,9 @@ true at once, and the reason is methodological:
 | scaler | `MinMaxScaler().fit()` on the full series, *then* split | fit inside each fold, guarded at runtime |
 | split | one fixed 30-day tail | walk-forward, 8 folds |
 | target | price levels | next-day returns |
-| headline metric | `1 − RMSPE` on levels | MASE vs. naive, directional accuracy, Sharpe after costs |
-| baseline | none | `NaiveLag` on every table, automatically |
+| headline metric | `1 − RMSPE` on levels | IC vs. realised returns; Sharpe after costs |
+| baseline | none | `NaiveLag` *and* `AlwaysLong` pinned to every table, automatically |
+| trading calendar | vendor-padded holidays scored as real sessions | padded non-sessions carry no label, and orders on them are refused |
 | agent evaluation | in-sample — `get_reward()` and `buy()` share `self.trend` | held-out folds only |
 | trading costs | none; 1 share per transaction | board lot, tick table, commission + VAT, ±30% limits, no naked shorting |
 
@@ -98,8 +116,8 @@ cp .env.example .env                     # optional; only needed for Settrade
 
 python -m stock_retrofit.cli fetch --symbols KBANK,SCB,BAY
 python -m stock_retrofit.cli evaluate --config configs/models/01_lstm.yaml --symbol KBANK
-python -m stock_retrofit.cli evaluate --all --symbol KBANK      # ~2 min
-python -m stock_retrofit.cli backtest --all --symbol KBANK      # ~20 min
+python -m stock_retrofit.cli evaluate --all --symbol KBANK      # ~2 min  (22 models)
+python -m stock_retrofit.cli backtest --all --symbol KBANK      # ~30 min (24 agents, 8 folds)
 python -m stock_retrofit.cli report --symbols KBANK,SCB,BAY
 pytest
 ```
@@ -151,11 +169,29 @@ realised on the first test bar.
 
 ### Metrics
 
-- **MASE** — MAE(model) / MAE(naive lag) on returns. Below 1.00 beats the lag. Computed on the
-  same out-of-sample block for both, so numerator and denominator see identical data.
-- **Directional accuracy** — over rows where a call was actually made. The naive lag abstains, so
-  its accuracy is undefined rather than 0%.
+- **`ic` / `ic_t`** — the out-of-sample correlation between forecast and realised return, and its
+  t-statistic. **This is the skill column.** 0.02–0.05 is a real daily equity signal, 0.10 is
+  excellent, 0.00 is knowing nothing. Read `ic_t` against the number of models tested: one or two
+  in twenty clear |t| > 1.96 by chance, and architectures sharing a feature set are not
+  independent draws. There is deliberately no `beats_naive` column.
+- **MASE** — MAE(model) / MAE(naive lag) on returns, computed on the same out-of-sample block for
+  both. Treat it as a **ranking, not a test**: on zero-inflated daily returns a genuinely skilful
+  forecaster still scores above 1.00 most of the time, so "MASE ≥ 1.00" says more about the metric
+  than about the model.
+- **`dir_acc`** — over days the price **actually moved**. `sign(0)` matches no forecast, so a flat
+  close is a guaranteed miss for every model however good, and 13–24% of sessions on these tickers
+  close unchanged on the SET tick grid; `flat_share` reports how many were set aside. The naive lag
+  abstains everywhere, so its accuracy is undefined rather than 0%.
 - **Sharpe after costs** — annualised, charged on position changes.
+- **Two reference rows are pinned to the top of every table.** `naive_lag` is the reference for the
+  forecast as a *number*; `always_long` is the reference for it as a *position* — its Sharpe is
+  what holding the share paid over the same blocks.
+
+Vendor-padded non-sessions are excluded throughout: yfinance fills SET holidays with a zero-volume,
+zero-range bar repeating the previous close, so the "return" on one is zero by construction. Those
+rows are dropped from the labels and `SETMarket` refuses orders on them. They are *kept as history*
+inside feature windows — they are real calendar days with observable closes — so they inform a
+forecast without ever being scored as one.
 
 ### Data quality
 
@@ -191,8 +227,11 @@ one config edit to reverse.
 
 ## Limits worth stating
 
-- **8 folds × 60 days = 480 out-of-sample observations per ticker.** Enough to reject a model, not
-  enough to crown one. Raise `max_folds` in `configs/eval.yaml` to use the full history.
+- **439 / 237 / 450 out-of-sample observations on KBANK / SCB / BAY.** Eight walk-forward folds of
+  60 days on KBANK and BAY and four on SCB — whose Yahoo history begins 2022-04-20 — less the
+  vendor-padded non-sessions, which carry no label. Enough to reject a model, not enough to crown
+  one. Raise `max_folds` in `configs/eval.yaml` to use the full history; the per-ticker `folds`
+  and `n` columns always say how many actually ran.
 - **Fills are at the close.** Intraday execution is out of scope, and `slippage_ticks` defaults to
   0 so the friction gap reflects the specified rules rather than a modelling choice of ours.
 - **Agents train against a fast numpy environment**, then evaluate through `SETMarket`. Training

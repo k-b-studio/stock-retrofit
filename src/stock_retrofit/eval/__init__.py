@@ -8,7 +8,7 @@ from .leakage import LeakageError, leakage_guard, register_fit
 from .manifest import RunManifest, data_fingerprint, git_sha
 from .metrics import MetricSet, evaluate, mase, sharpe
 from .preprocessing import FoldArrays, WindowSpec, prepare_fold
-from .report import render_table, results_table, summarise_beats
+from .report import render_table, results_table, summarise_skill
 from .runner import EvalResult, run_walk_forward, set_seed
 from .splits import Fold, WalkForward
 
@@ -33,5 +33,5 @@ __all__ = [
     "run_walk_forward",
     "set_seed",
     "sharpe",
-    "summarise_beats",
+    "summarise_skill",
 ]

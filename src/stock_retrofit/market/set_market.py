@@ -25,6 +25,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
 
+from ..data.protocol import is_session
 from .rules import (
     BOARD_LOT,
     DEFAULT_PRICE_LIMIT,
@@ -191,6 +192,10 @@ class SETMarket:
         self.low = self.bars["low"].to_numpy(dtype=float)
         self.volume = self.bars["volume"].to_numpy(dtype=float)
         self.dates = self.bars["date"]
+        # A padded SET holiday is not a session an order can reach. This holds in
+        # the frictionless twin too: that twin exists to isolate the cost of
+        # trading, not to invent days on which to trade.
+        self.session = is_session(self.bars)
         self.reset()
 
     # ---- state ------------------------------------------------------------
@@ -282,6 +287,8 @@ class SETMarket:
         price = self.fill_price(t, "buy")
         record = dict(t=t, date=self.dates.iloc[t], side="buy")
 
+        if not self.session[t]:
+            return self._reject(record, shares or 0, "market_closed")
         if price <= 0:
             return self._reject(record, shares or 0, "unpriceable")
         if not self._limit_ok(t, price):
@@ -333,6 +340,8 @@ class SETMarket:
         price = self.fill_price(t, "sell")
         record = dict(t=t, date=self.dates.iloc[t], side="sell")
 
+        if not self.session[t]:
+            return self._reject(record, shares or 0, "market_closed")
         if price <= 0:
             return self._reject(record, shares or 0, "unpriceable")
         if not self._limit_ok(t, price):
@@ -398,8 +407,8 @@ class SETMarket:
             )
             if not cfg.frictionless:
                 assert is_on_tick(f.price), f"fill at {f.price} on {f.date} is off-tick"
-                assert is_on_lot(
-                    f.filled, lot=cfg.board_lot
-                ), f"fill of {f.filled} shares on {f.date} is not a whole board lot"
+                assert is_on_lot(f.filled, lot=cfg.board_lot), (
+                    f"fill of {f.filled} shares on {f.date} is not a whole board lot"
+                )
         if not cfg.allow_short:
             assert self.shares >= 0, "short position held with shorting disabled"
