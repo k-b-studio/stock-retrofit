@@ -4,7 +4,12 @@ State at the end of the session that **regenerated every result** against the co
 the fixes from `reviews/forecasting-models-2026-08-14.md`.
 
 **Code and published results are now in sync.** The previous handoff's three "do this next"
-items are all done. What remains is one genuine open decision, listed at the bottom.
+items are all done, and committed as `56adb41`.
+
+What remains, all of it below: **one design decision** (should `always_long` report an IC?)
+and **four cleanup items** — the largest being that notebooks 01–06 were never re-executed,
+so five of them still display a deleted column and one embeds a two-commit-stale report.
+Nothing outstanding touches `src/`, the test suite, or the numbers in `results/`.
 
 ---
 
@@ -89,7 +94,7 @@ Regenerating exposed two figures asserting things the report now retracts:
 items plus the market fix, the regenerated numbers, and the two extra figure fixes. The
 "What to change" list is kept — the reasoning is the useful part.
 
-## Unfinished — the one real decision left
+## The one design decision left
 
 **Should `always_long` report an IC at all?** It is inconsistent across tickers today, which
 is worse than either answer:
@@ -110,6 +115,60 @@ Also still true from the previous handoff:
 - The MASE power figures quoted in `metrics.py` and `report.py` (IC 0.10 crosses 1.00 in
   27% / 34% / 0% of draws on KBANK / SCB / BAY) were measured on this evaluation set. If
   `configs/eval.yaml` changes, re-measure rather than carrying them forward.
+
+---
+
+## Issues to fix next session
+
+Found by auditing the repo *after* commit `56adb41`. Ranked by how visible the damage is.
+None of these affect `src/`, the test suite, or the numbers in `results/` — they are stale
+**deliverables** and housekeeping.
+
+### 1. Notebooks 01–06 still show pre-fix outputs — **fix this first**
+
+Only `07_figures.ipynb` was re-executed. The other six carry stored outputs from before the
+IC change, so as deliverables they display a column that no longer exists and a conclusion
+the report now retracts. Two need a **prose edit before re-running** — re-execution alone
+will not correct them:
+
+| file | cell | what is wrong | source or output? |
+|---|---|---|---|
+| `04_models.ipynb` | 5 | "The `beats_naive` column is computed, not interpreted: **MASE < 1.00 beats the naive lag.**" — that column was deleted | **source** (edit) |
+| `04_models.ipynb` | 5 | "These models sit around 40–45% directional accuracy — *below* a coin flip." — the flat-days artefact §4 removed. Post-fix the real range is **44–58%, mean 51.7 / 51.0 / 54.4%** | **source** (edit) |
+| `04_models.ipynb` | 4 | two result tables printing a `beats_naive` column | output (re-run) |
+| `02_harness.ipynb` | 10 | result table printing a `beats_naive` column | output (re-run) |
+| `06_report.ipynb` | 5 | embeds a **fully rendered report generated 2026-08-13 from git `13ebaad`** — two commits stale, carrying the retracted "beats the naive lag" headline | output (re-run) |
+
+Order: edit `04_models` cell 5 prose → re-execute 01–06 in sequence → confirm no
+`beats_naive` survives anywhere:
+
+```bash
+grep -l "beats_naive" notebooks/*.ipynb     # should return nothing
+```
+
+### 2. Decide whether `results/*.csv` should be tracked
+
+`.gitignore:18` is a blanket `results/*`; `final-report.md` and the four PNGs are force-added
+as deliverables, so the six result CSVs **and every `*.manifest.json`** are untracked. The
+~77 minutes of compute is therefore not reproducible from a clone, and the provenance
+manifests the README advertises ("every run has a manifest recording config, git SHA and
+data hash") are not actually in the repo. Consistent with earlier commits, so it looks
+deliberate — but it is worth an explicit decision rather than an inherited default.
+
+### 3. Ruff: 42 findings, all in `notebooks/`
+
+`ruff check src tests` is clean; bare `ruff check` is not. All seven notebooks trip
+`E401` (`import sys, pathlib`), `I001` (unsorted imports) and `E402` (imports below code —
+partly unavoidable, since the `sys.path` bootstrap must run before the package imports).
+Pre-existing and unchanged by this session. `ruff check --fix` clears 27 of the 42; the
+`E402`s need either a per-file ignore or a `# noqa: E402` on the bootstrap cells.
+
+### 4. Figure 3's buy-and-hold reference assumes exactly one baseline row
+
+`07_figures.ipynb` cell 7 computes `n_beat` against `d.loc[is_bh, "ret_friction"].iloc[0]`.
+With one `buy_and_hold` agent per ticker that is correct today, but it will silently compare
+against whichever row sorts first if a second baseline agent is ever registered. Low
+priority; noted so it is not mistaken for intent.
 
 ## Errors hit, and their resolutions
 
