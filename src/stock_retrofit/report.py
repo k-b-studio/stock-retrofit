@@ -1,9 +1,16 @@
 """The final comparison report — models x agents x tickers.
 
-Acceptance criterion 9: the report must state plainly how many models beat
-`NaiveLag` out-of-sample after costs, **including if the answer is zero**. That
-sentence is generated from the numbers, not written by hand, so it cannot drift
-away from what the tables actually say.
+Acceptance criterion 9: the report must state plainly whether the models showed
+any out-of-sample skill, **including if the answer is no**. That sentence is
+generated from the numbers, not written by hand, so it cannot drift away from
+what the tables actually say.
+
+The measure is IC — the correlation between forecast and realised return —
+reported against `always_long` net of costs, and read next to the number of
+significant runs expected by chance. An earlier revision headlined a count of
+models beating `naive_lag` on MASE; that count was near-fixed before any model
+ran (see the module docstring of `eval.report`), so it was replaced by one that
+could have come out the other way. The conclusion did not change.
 """
 
 from __future__ import annotations
