@@ -1,6 +1,6 @@
 # stock-retrofit — results
 
-Generated 2026-08-14 09:03 UTC · git `94c83f63b35ac57337dc240f298bc14fb16d7e84-dirty` · seed 42
+Generated 2026-08-21 03:14 UTC · git `1d2f20c4d3256423db2f3b79a19dac8b8bba9624` · seed 42
 
 Walk-forward evaluation of the [huseinzol05/Stock-Prediction-Models](https://github.com/huseinzol05/Stock-Prediction-Models) catalogue on Thai SET bank shares, on a harness that does not leak and a backtest that charges SET trading costs.
 
@@ -32,18 +32,18 @@ Rendered by `notebooks/07_figures.ipynb` — one figure per cell.
 
 **KBANK** — Kasikornbank PCL
   - liquidity: Large cap, liquid, no known discontinuity. The clean case.
-  - 6594 bars 2000-01-04 → 2026-08-13, source `yfinance`, hash `65593b0d9856`, 0 repaired field(s)
+  - 6599 bars 2000-01-04 → 2026-08-20, source `yfinance`, hash `634a85724e19`, 0 repaired field(s)
 
 **SCB** — SCB X PCL (formerly The Siam Commercial Bank PCL)
   - liquidity: Large cap, liquid. Series carries an issuer substitution at 2022-04-22.
   - break 2022-04-22 [issuer_substitution]: SCB delisted and SCB X PCL listed 1:1 in its place, retaining the SCB ticker. A change of issuer (bank -> holding company), not merely of name. Pre-2022-04-22 'SCB' bars belong to a different legal entity.
   - source: SCB/SCBX first-party announcements, March-April 2022
-  - 1047 bars 2022-04-20 → 2026-08-13, source `yfinance`, hash `80cd33cbe28b`, 0 repaired field(s)
+  - 1052 bars 2022-04-20 → 2026-08-20, source `yfinance`, hash `45ff5849b93d`, 0 repaired field(s)
 
 **BAY** — Bank of Ayudhya PCL (Krungsri)
   - liquidity: Thin float: ~72-76% held by MUFG since the 2013 acquisition. Daily turnover is small relative to SCB/KBANK. Treat as the liquidity stress case and cap participation in any backtest.
   - default participation cap: 5.0% of volume
-  - 6594 bars 2000-01-04 → 2026-08-13, source `yfinance`, hash `f40091c34855`, 0 repaired field(s)
+  - 6599 bars 2000-01-04 → 2026-08-20, source `yfinance`, hash `2f998fce1fec`, 0 repaired field(s)
 
 ## KBANK
 
@@ -121,34 +121,34 @@ Buy-and-hold returned **+7.82%** per fold after costs on KBANK. **0 of 23 active
 
 | model | IC | t | MASE | dir acc | RMSE(ret) | Sharpe net | Sharpe gross |
 |---|---|---|---|---|---|---|---|
-| 00_naive_lag | — | — | 1.0000 | — | 0.01011 | +0.00 | +0.00 |
-| 00_always_long | -0.094 | -1.4 | 1.0059 | 53.7% | 0.01011 | +0.94 | +0.97 |
-| 12_lstm_seq2seq_vae | +0.012 | +0.2 | 1.0065 | 52.2% | 0.01010 | +0.76 | +0.83 |
-| 19_stack_rnn_arima_xgb | -0.116 | -1.8 | 1.0081 | 53.7% | 0.01012 | +0.94 | +0.97 |
-| 21_arima | -0.005 | -0.1 | 1.0091 | 55.2% | 0.01015 | -0.54 | +1.23 |
-| 02_bidirectional_lstm | -0.015 | -0.2 | 1.0099 | 52.2% | 0.01013 | -0.25 | +0.73 |
-| 07_vanilla | -0.029 | -0.4 | 1.0119 | 53.2% | 0.01015 | -0.62 | +0.96 |
-| 05_bidirectional_gru | -0.019 | -0.3 | 1.0125 | 51.2% | 0.01017 | -0.79 | +0.53 |
-| 15_gru_seq2seq_vae | -0.046 | -0.7 | 1.0156 | 43.8% | 0.01015 | -0.64 | -0.35 |
-| 08_bidirectional_vanilla | -0.071 | -1.1 | 1.0160 | 51.7% | 0.01022 | -0.90 | +0.96 |
-| 16_attention_is_all_you_need | -0.047 | -0.7 | 1.0172 | 54.2% | 0.01023 | +0.47 | +0.90 |
-| 13_gru_seq2seq | -0.064 | -1.0 | 1.0177 | 53.2% | 0.01019 | -0.02 | +0.67 |
-| 11_bidirectional_lstm_seq2seq | -0.047 | -0.7 | 1.0185 | 48.8% | 0.01019 | -0.44 | +0.54 |
-| 14_bidirectional_gru_seq2seq | -0.036 | -0.5 | 1.0193 | 50.7% | 0.01018 | -0.61 | +0.73 |
-| 04_gru | -0.013 | -0.2 | 1.0202 | 50.2% | 0.01024 | -0.09 | +0.51 |
-| 09_vanilla_2path | -0.102 | -1.6 | 1.0253 | 50.2% | 0.01029 | -0.94 | +0.63 |
-| 06_gru_2path | -0.046 | -0.7 | 1.0266 | 50.2% | 0.01030 | -0.60 | +0.26 |
-| 01_lstm | -0.066 | -1.0 | 1.0286 | 46.8% | 0.01024 | -0.51 | +0.05 |
-| 17_cnn_seq2seq | -0.055 | -0.8 | 1.0295 | 50.2% | 0.01041 | -1.72 | +0.48 |
-| 10_lstm_seq2seq | +0.032 | +0.5 | 1.0365 | 50.7% | 0.01020 | -0.03 | +0.50 |
-| 03_lstm_2path | -0.026 | -0.4 | 1.0387 | 54.2% | 0.01038 | -0.03 | +0.97 |
-| 18_dilated_cnn_seq2seq | +0.007 | +0.1 | 1.0388 | 47.3% | 0.01034 | -2.31 | +0.19 |
-| 20_stack_encoder_ensemble_xgb | -0.023 | -0.4 | 1.0750 | 51.2% | 0.01056 | -2.14 | +0.65 |
-| 22_xgboost | -0.066 | -1.0 | 1.1403 | 49.8% | 0.01129 | -2.55 | +0.27 |
+| 00_naive_lag | — | — | 1.0000 | — | 0.01052 | +0.00 | +0.00 |
+| 00_always_long | -0.067 | -1.1 | 1.0054 | 53.8% | 0.01051 | +1.33 | +1.35 |
+| 21_arima | +0.010 | +0.2 | 1.0052 | 57.0% | 0.01053 | -0.10 | +1.74 |
+| 12_lstm_seq2seq_vae | +0.001 | +0.0 | 1.0057 | 52.6% | 0.01050 | +1.20 | +1.26 |
+| 07_vanilla | -0.029 | -0.5 | 1.0070 | 53.4% | 0.01055 | -0.54 | +0.99 |
+| 19_stack_rnn_arima_xgb | -0.091 | -1.6 | 1.0073 | 53.8% | 0.01051 | +1.33 | +1.35 |
+| 02_bidirectional_lstm | -0.008 | -0.1 | 1.0074 | 52.6% | 0.01052 | +0.46 | +1.21 |
+| 05_bidirectional_gru | -0.024 | -0.4 | 1.0098 | 52.2% | 0.01056 | -0.08 | +1.07 |
+| 08_bidirectional_vanilla | -0.067 | -1.1 | 1.0107 | 53.0% | 0.01063 | -0.75 | +1.12 |
+| 15_gru_seq2seq_vae | -0.025 | -0.4 | 1.0129 | 45.8% | 0.01054 | +0.19 | +0.41 |
+| 13_gru_seq2seq | -0.049 | -0.8 | 1.0136 | 53.4% | 0.01056 | +0.60 | +1.16 |
+| 11_bidirectional_lstm_seq2seq | -0.050 | -0.8 | 1.0142 | 50.6% | 0.01057 | +0.41 | +1.24 |
+| 14_bidirectional_gru_seq2seq | -0.039 | -0.7 | 1.0152 | 52.2% | 0.01057 | +0.08 | +1.27 |
+| 16_attention_is_all_you_need | -0.054 | -0.9 | 1.0161 | 53.8% | 0.01066 | +0.66 | +1.15 |
+| 04_gru | -0.027 | -0.5 | 1.0170 | 49.4% | 0.01063 | -0.27 | +0.33 |
+| 06_gru_2path | -0.035 | -0.6 | 1.0176 | 52.2% | 0.01067 | -0.28 | +0.78 |
+| 09_vanilla_2path | -0.085 | -1.5 | 1.0182 | 51.8% | 0.01067 | -0.68 | +0.95 |
+| 01_lstm | -0.073 | -1.2 | 1.0240 | 46.6% | 0.01064 | -0.48 | +0.05 |
+| 10_lstm_seq2seq | +0.020 | +0.3 | 1.0279 | 51.4% | 0.01059 | +0.20 | +0.83 |
+| 03_lstm_2path | -0.022 | -0.4 | 1.0300 | 54.2% | 0.01072 | +0.51 | +1.37 |
+| 17_cnn_seq2seq | -0.070 | -1.2 | 1.0340 | 49.4% | 0.01084 | -1.59 | +0.68 |
+| 18_dilated_cnn_seq2seq | +0.007 | +0.1 | 1.0346 | 48.6% | 0.01070 | -1.65 | +0.72 |
+| 20_stack_encoder_ensemble_xgb | -0.139 | -2.4 | 1.0963 | 51.0% | 0.01144 | -1.75 | +0.84 |
+| 22_xgboost | -0.076 | -1.3 | 1.1264 | 48.6% | 0.01162 | -2.64 | +0.32 |
 
-**Mean IC -0.038 over 22 models on SCB; 3 of 22 positive.** 0 clear |t| > 1.96, against 1 expected by chance.
+**Mean IC -0.042 over 22 models on SCB; 4 of 22 positive.** 1 clear |t| > 1.96, against 1 expected by chance: 20_stack_encoder_ensemble_xgb.
 
-Holding SCB scored a net Sharpe of **+0.94** over the same blocks. **0 of 22 models beat it.**
+Holding SCB scored a net Sharpe of **+1.33** over the same blocks. **0 of 22 models beat it.**
 
 ### Agents — frictionless vs. SET frictions
 
@@ -261,11 +261,11 @@ Buy-and-hold returned **+10.56%** per fold after costs on BAY. **0 of 23 active 
 
 ## Headline
 
-**Mean out-of-sample IC of +0.009 across 66 model runs on 3 tickers (KBANK, SCB, BAY); 36 of 66 are positive.**
+**Mean out-of-sample IC of +0.008 across 66 model runs on 3 tickers (KBANK, SCB, BAY); 37 of 66 are positive.**
 
 A coin flip would put half of them above zero. That is what a catalogue with no forecasting skill on this universe looks like, and it is the result the spec anticipated as legitimate and likely.
 
-Two supporting facts, both pointing the same way. 5 runs clear |t| > 1.96 against roughly 3 expected by chance alone — and those runs are not independent draws, since all 22 architectures read the same five features. And 0 of 66 beat simply holding the share, which is the comparison that decides whether any of this was worth running.
+Two supporting facts, both pointing the same way. 6 runs clear |t| > 1.96 against roughly 3 expected by chance alone — and those runs are not independent draws, since all 22 architectures read the same five features. And 0 of 66 beat simply holding the share, which is the comparison that decides whether any of this was worth running.
 
 The upstream repository reports accuracies in the high nineties for the same architectures. Both things are true at once, and the reason is methodological, not architectural: upstream fits its scaler on the full series before splitting, scores price levels rather than returns, and shows no baseline. On price levels a naive lag also scores in the high nineties — `metrics.upstream_accuracy_do_not_use` and its test demonstrate this. Those numbers never measured skill.
 
